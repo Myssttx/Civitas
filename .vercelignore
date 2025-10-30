@@ -1,0 +1,19 @@
+# Vercel ignore file
+node_modules
+.next
+.env
+.env.local
+.env*.local
+.git
+.DS_Store
+*.log
+coverage
+.vscode
+.idea
+*.swp
+*.swo
+playwright-report
+test-results
+dist
+build
+

@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Campus Resilience - Emergency Readiness and Community Safety App">
+    <title>Campus Resilience</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #0a1929;
+            color: #e0e0e0;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .app-container {
+            display: flex;
+            height: 100vh;
+            flex-direction: column;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #1e3a5f 0%, #2d4a6d 100%);
+            padding: 1rem 1.5rem;
+            border-bottom: 2px solid #3a5f8f;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+        
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #4fc3f7;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .status-badge {
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .status-safe {
+            background: #2e7d32;
+            color: white;
+        }
+        
+        .status-need-help {
+            background: #d32f2f;
+            color: white;
+        }
+        
+        .status-can-help {
+            background: #1976d2;
+            color: white;
+        }
+        
+        .status-none {
+            background: #424242;
+            color: #bdbdbd;
+        }
+        
+        .main-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        .sidebar {
+            width: 380px;
+            background: #152238;
+            border-right: 1px solid #2d4a6d;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.2);
+        }
+        
+        .map-container {
+            flex: 1;
+            position: relative;
+            background: #0a1929;
+        }
+        
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .section {
+            padding: 1.5rem;
+            border-bottom: 1px solid #2d4a6d;
+        }
+        
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #64b5f6;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .status-selector {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        
+        .status-btn {
+            padding: 0.75rem 1rem;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            background: #1e3a5f;
+            color: #e0e0e0;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+        }
+        
+        .status-btn:hover {
+            background: #2d4a6d;
+            border-color: #4fc3f7;
+        }
+        
+        .status-btn.active {
+            background: #1565c0;
+            border-color: #4fc3f7;
+            color: white;
+        }
+        
+        .checklist {
+            list-style: none;
+        }
+        
+        .checklist-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            background: #1e3a5f;
+            margin-bottom: 0.5rem;
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+        
+        .checklist-item:hover {
+            background: #2d4a6d;
+        }
+        
+        .checklist-item input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: #4fc3f7;
+        }
+        
+        .checklist-item label {
+            flex: 1;
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        .checklist-item.completed label {
+            text-decoration: line-through;
+            opacity: 0.6;
+        }
+        
+        .alerts-feed {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .alert-item {
+            background: #1e3a5f;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            border-radius: 8px;
+            border-left: 4px solid;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .alert-item:hover {
+            transform: translateX(4px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        
+        .alert-item.severe {
+            border-left-color: #f44336;
+        }
+        
+        .alert-item.moderate {
+            border-left-color: #ff9800;
+        }
+        
+        .alert-item.minor {
+            border-left-color: #4caf50;
+        }
+        
+        .alert-title {
+            font-weight: 600;
+            color: #64b5f6;
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+        }
+        
+        .alert-details {
+            font-size: 0.85rem;
+            color: #b0bec5;
+            line-height: 1.5;
+        }
+        
+        .alert-severity {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-top: 0.5rem;
+            text-transform: uppercase;
+        }
+        
+        .no-alerts {
+            text-align: center;
+            color: #78909c;
+            padding: 2rem;
+            font-style: italic;
+        }
+        
+        .loading {
+            text-align: center;
+            color: #64b5f6;
+            padding: 1rem;
+        }
+        
+        .error-message {
+            background: #b71c1c;
+            color: white;
+            padding: 0.75rem;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+        }
+        
+        /* Resource Requests Section */
+        .requests-board {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .request-item {
+            background: #1e3a5f;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            border-radius: 6px;
+            border-left: 3px solid #4fc3f7;
+        }
+        
+        .request-item.urgent {
+            border-left-color: #f44336;
+            background: #2a1e1e;
+        }
+        
+        .request-type {
+            font-weight: 600;
+            color: #4fc3f7;
+            font-size: 0.9rem;
+        }
+        
+        .request-desc {
+            font-size: 0.85rem;
+            color: #b0bec5;
+            margin-top: 0.25rem;
+        }
+        
+        .request-urgent-badge {
+            display: inline-block;
+            background: #f44336;
+            color: white;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            margin-left: 0.5rem;
+        }
+        
+        .new-request-form {
+            margin-top: 1rem;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 0.5rem;
+            margin-bottom: 0.5rem;
+            background: #1e3a5f;
+            border: 1px solid #3a5f8f;
+            border-radius: 4px;
+            color: #e0e0e0;
+            font-size: 0.9rem;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: #4fc3f7;
+        }
+        
+        .form-btn {
+            padding: 0.5rem 1rem;
+            background: #1565c0;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        
+        .form-btn:hover {
+            background: #1976d2;
+        }
+        
+        .community-status {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #2d4a6d;
+        }
+        
+        .community-stat {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            font-size: 0.85rem;
+        }
+        
+        .community-stat-value {
+            color: #4fc3f7;
+            font-weight: 600;
+        }
+        
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                max-height: 50vh;
+                border-right: none;
+                border-top: 1px solid #2d4a6d;
+            }
+            
+            .map-container {
+                height: 50vh;
+                min-height: 300px;
+            }
+            
+            .header {
+                padding: 0.75rem 1rem;
+            }
+            
+            .header h1 {
+                font-size: 1.2rem;
+            }
+            
+            .section {
+                padding: 1rem;
+            }
+        }
+        
+        /* Scrollbar styling */
+        .sidebar::-webkit-scrollbar,
+        .alerts-feed::-webkit-scrollbar,
+        .requests-board::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .sidebar::-webkit-scrollbar-track,
+        .alerts-feed::-webkit-scrollbar-track,
+        .requests-board::-webkit-scrollbar-track {
+            background: #152238;
+        }
+        
+        .sidebar::-webkit-scrollbar-thumb,
+        .alerts-feed::-webkit-scrollbar-thumb,
+        .requests-board::-webkit-scrollbar-thumb {
+            background: #3a5f8f;
+            border-radius: 4px;
+        }
+        
+        .sidebar::-webkit-scrollbar-thumb:hover,
+        .alerts-feed::-webkit-scrollbar-thumb:hover,
+        .requests-board::-webkit-scrollbar-thumb:hover {
+            background: #4fc3f7;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <header class="header">
+            <h1>
+                🛡️ Campus Resilience
+                <span id="statusBadge" class="status-badge status-none">Status: Not Set</span>
+            </h1>
+        </header>
+        
+        <div class="main-content">
+            <aside class="sidebar">
+                <div class="section">
+                    <h2 class="section-title">🆘 Your Status</h2>
+                    <div class="status-selector">
+                        <button class="status-btn" data-status="safe">✅ I'm Safe</button>
+                        <button class="status-btn" data-status="need-help">🚨 Need Help</button>
+                        <button class="status-btn" data-status="can-help">🤝 Can Help</button>
+                    </div>
+                    <div id="communityStatus" class="community-status" style="display: none;">
+                        <div class="community-stat">
+                            <span>Safe:</span>
+                            <span class="community-stat-value" id="statSafe">0</span>
+                        </div>
+                        <div class="community-stat">
+                            <span>Need Help:</span>
+                            <span class="community-stat-value" id="statNeedHelp">0</span>
+                        </div>
+                        <div class="community-stat">
+                            <span>Can Help:</span>
+                            <span class="community-stat-value" id="statCanHelp">0</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <h2 class="section-title">📋 Emergency Checklist</h2>
+                    <ul class="checklist" id="checklist"></ul>
+                </div>
+                
+                <div class="section">
+                    <h2 class="section-title">💬 Resource Requests</h2>
+                    <div class="requests-board" id="requestsBoard">
+                        <div class="loading">Loading requests...</div>
+                    </div>
+                    <div class="new-request-form">
+                        <input type="text" class="form-input" id="requestType" placeholder="Type (e.g., Water, Food)">
+                        <textarea class="form-input" id="requestDesc" placeholder="Description" rows="2"></textarea>
+                        <label style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; font-size: 0.85rem;">
+                            <input type="checkbox" id="requestUrgent" style="width: auto;">
+                            <span>Urgent</span>
+                        </label>
+                        <button class="form-btn" onclick="createRequest()">Post Request</button>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <h2 class="section-title">⚠️ Active Alerts</h2>
+                    <div class="alerts-feed" id="alertsFeed">
+                        <div class="loading">Loading alerts...</div>
+                    </div>
+                </div>
+            </aside>
+            
+            <div class="map-container">
+                <div id="map"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <script>
+        // App Configuration
+        const CONFIG = {
+            MAP_CENTER: [33.2075, -97.1526], // University of North Texas (Denton, TX)
+            MAP_ZOOM: 15,
+            NWS_API_BASE: 'https://api.weather.gov/alerts/active',
+            NWS_AREA: 'TX',
+            UPDATE_INTERVAL: 5 * 60 * 1000, // 5 minutes
+            // Backend Configuration - Set to your backend URL or null to disable
+            API_BASE_URL: 'http://localhost:3000', // Change to your deployed backend URL
+            USE_BACKEND: true // Set to false to use localStorage only
+        };
+        
+        // User ID management (in production, use proper authentication)
+        let userId = localStorage.getItem('userId') || `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        localStorage.setItem('userId', userId);
+        
+        // Campus Resources Data
+        const SHELTERS = [
+            { name: 'GPEB Room 312', coords: [33.2090, -97.1510], type: 'shelter' },
+            { name: 'Library Lower Level', coords: [33.2065, -97.1505], type: 'shelter' },
+            { name: 'Union Storm Room', coords: [33.2080, -97.1530], type: 'shelter' }
+        ];
+        
+        const AEDS = [
+            { name: 'AED – Union 1st Floor', coords: [33.2080, -97.1532], type: 'aed' },
+            { name: 'AED – Library Entrance', coords: [33.2065, -97.1507], type: 'aed' }
+        ];
+        
+        // Emergency Checklist Default Items
+        const DEFAULT_CHECKLIST = [
+            'Flashlight',
+            'Extra batteries',
+            'Water (1 gal/person/day)',
+            'Battery/hand-crank radio',
+            '3–7 day medications',
+            'First aid kit',
+            'Non-perishable food',
+            'Emergency contact list',
+            'Important documents (copies)',
+            'Cash (small bills)'
+        ];
+        
+        // Initialize Map
+        let map = L.map('map').setView(CONFIG.MAP_CENTER, CONFIG.MAP_ZOOM);
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 19
+        }).addTo(map);
+        
+        // Marker layers
+        let shelterMarkers = [];
+        let aedMarkers = [];
+        let alertLayers = L.layerGroup().addTo(map);
+        
+        // API Helper Functions
+        async function apiCall(endpoint, options = {}) {
+            if (!CONFIG.USE_BACKEND || !CONFIG.API_BASE_URL) {
+                return null; // Backend disabled
+            }
+            
+            try {
+                const response = await fetch(`${CONFIG.API_BASE_URL}${endpoint}`, {
+                    ...options,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-user-id': userId,
+                        ...options.headers
+                    }
+                });
+                
+                if (!response.ok) throw new Error(`API error: ${response.status}`);
+                return await response.json();
+            } catch (error) {
+                console.warn('Backend API call failed:', error);
+                return null; // Graceful fallback to localStorage
+            }
+        }
+        
+        // Initialize Shelter Markers
+        function initShelters() {
+            SHELTERS.forEach(shelter => {
+                const marker = L.marker(shelter.coords, {
+                    icon: L.icon({
+                        iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png',
+                        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                        iconSize: [25, 41],
+                        iconAnchor: [12, 41],
+                        popupAnchor: [1, -34],
+                        shadowSize: [41, 41]
+                    })
+                }).addTo(map);
+                
+                marker.bindPopup(`<strong>${shelter.name}</strong><br>Emergency Shelter`);
+                shelterMarkers.push({ marker, ...shelter });
+            });
+        }
+        
+        // Initialize AED Markers
+        function initAEDs() {
+            AEDS.forEach(aed => {
+                const marker = L.marker(aed.coords, {
+                    icon: L.icon({
+                        iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
+                        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                        iconSize: [25, 41],
+                        iconAnchor: [12, 41],
+                        popupAnchor: [1, -34],
+                        shadowSize: [41, 41]
+                    })
+                }).addTo(map);
+                
+                marker.bindPopup(`<strong>${aed.name}</strong><br>Automated External Defibrillator`);
+                aedMarkers.push({ marker, ...aed });
+            });
+        }
+        
+        // Haversine distance calculation (in meters)
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371000;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c;
+        }
+        
+        // Find nearest shelter
+        function findNearestShelter(lat, lng) {
+            let nearest = null;
+            let minDistance = Infinity;
+            
+            SHELTERS.forEach(shelter => {
+                const distance = calculateDistance(lat, lng, shelter.coords[0], shelter.coords[1]);
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    nearest = shelter;
+                }
+            });
+            
+            return { shelter: nearest, distance: Math.round(minDistance) };
+        }
+        
+        // Map click handler
+        map.on('click', function(e) {
+            const { shelter, distance } = findNearestShelter(e.latlng.lat, e.latlng.lng);
+            if (shelter) {
+                const distanceText = distance < 1000 
+                    ? `${distance} m away` 
+                    : `${(distance / 1000).toFixed(2)} km away`;
+                
+                L.popup()
+                    .setLatLng(e.latlng)
+                    .setContent(`
+                        <div style="text-align: center; padding: 0.5rem;">
+                            <strong>📍 Nearest Shelter</strong><br>
+                            ${shelter.name}<br>
+                            <span style="color: #4fc3f7; font-weight: 600;">Approx. ${distanceText}</span>
+                        </div>
+                    `)
+                    .openOn(map);
+            }
+        });
+        
+        // Fetch NWS Alerts
+        async function fetchAlerts() {
+            try {
+                const response = await fetch(`${CONFIG.NWS_API_BASE}?area=${CONFIG.NWS_AREA}`);
+                if (!response.ok) throw new Error('Failed to fetch alerts');
+                const data = await response.json();
+                localStorage.setItem('lastAlerts', JSON.stringify(data));
+                return data;
+            } catch (error) {
+                console.error('Error fetching alerts:', error);
+                const lastAlerts = localStorage.getItem('lastAlerts');
+                if (lastAlerts) return JSON.parse(lastAlerts);
+                throw error;
+            }
+        }
+        
+        function getSeverityLevel(severity) {
+            const sev = (severity || '').toLowerCase();
+            if (sev.includes('extreme') || sev.includes('severe')) return 'severe';
+            if (sev.includes('moderate')) return 'moderate';
+            return 'minor';
+        }
+        
+        function getSeverityColor(severity) {
+            const level = getSeverityLevel(severity);
+            const colors = { severe: '#f44336', moderate: '#ff9800', minor: '#4caf50' };
+            return colors[level] || '#78909c';
+        }
+        
+        function drawAlertPolygons(features) {
+            alertLayers.clearLayers();
+            
+            features.forEach(feature => {
+                if (feature.geometry && feature.geometry.type === 'Polygon') {
+                    const coordinates = feature.geometry.coordinates[0];
+                    const latlngs = coordinates.map(coord => [coord[1], coord[0]]);
+                    const severity = feature.properties.severity || 'Unknown';
+                    const color = getSeverityColor(severity);
+                    
+                    const polygon = L.polygon(latlngs, {
+                        color: color,
+                        fillColor: color,
+                        fillOpacity: 0.3,
+                        weight: 2
+                    }).addTo(alertLayers);
+                    
+                    polygon.bindPopup(`
+                        <strong>${feature.properties.event || 'Alert'}</strong><br>
+                        ${feature.properties.headline || ''}<br>
+                        <small>Severity: ${severity}</small>
+                    `);
+                } else if (feature.geometry && feature.geometry.type === 'MultiPolygon') {
+                    feature.geometry.coordinates.forEach(polygonCoords => {
+                        const coordinates = polygonCoords[0];
+                        const latlngs = coordinates.map(coord => [coord[1], coord[0]]);
+                        const severity = feature.properties.severity || 'Unknown';
+                        const color = getSeverityColor(severity);
+                        
+                        const polygon = L.polygon(latlngs, {
+                            color: color,
+                            fillColor: color,
+                            fillOpacity: 0.3,
+                            weight: 2
+                        }).addTo(alertLayers);
+                        
+                        polygon.bindPopup(`
+                            <strong>${feature.properties.event || 'Alert'}</strong><br>
+                            ${feature.properties.headline || ''}<br>
+                            <small>Severity: ${severity}</small>
+                        `);
+                    });
+                }
+            });
+        }
+        
+        function formatExpiration(expires) {
+            if (!expires) return 'Unknown';
+            try {
+                return new Date(expires).toLocaleString();
+            } catch {
+                return expires;
+            }
+        }
+        
+        function displayAlerts(features) {
+            const feed = document.getElementById('alertsFeed');
+            
+            if (!features || features.length === 0) {
+                feed.innerHTML = '<div class="no-alerts">No active alerts at this time.</div>';
+                return;
+            }
+            
+            feed.innerHTML = features.map(feature => {
+                const props = feature.properties;
+                const severity = getSeverityLevel(props.severity);
+                const area = props.areaDesc || 'Unknown area';
+                
+                return `
+                    <div class="alert-item ${severity}">
+                        <div class="alert-title">${props.event || 'Alert'}</div>
+                        <div class="alert-details">
+                            <div><strong>Area:</strong> ${area}</div>
+                            <div><strong>Expires:</strong> ${formatExpiration(props.expires)}</div>
+                            ${props.headline ? `<div style="margin-top: 0.5rem;">${props.headline}</div>` : ''}
+                            <span class="alert-severity" style="background: ${getSeverityColor(props.severity)}; color: white;">
+                                ${props.severity || 'Unknown'}
+                            </span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            drawAlertPolygons(features);
+        }
+        
+        async function loadAlerts() {
+            const feed = document.getElementById('alertsFeed');
+            feed.innerHTML = '<div class="loading">Loading alerts...</div>';
+            
+            try {
+                const data = await fetchAlerts();
+                if (data.features) {
+                    displayAlerts(data.features);
+                } else {
+                    feed.innerHTML = '<div class="no-alerts">No active alerts at this time.</div>';
+                }
+            } catch (error) {
+                feed.innerHTML = `
+                    <div class="error-message">⚠️ Unable to fetch alerts. Showing last known alerts if available.</div>
+                    <div class="no-alerts">Check your internet connection and try again.</div>
+                `;
+            }
+        }
+        
+        // Status Management with Backend
+        async function updateStatus(status, location = null) {
+            // Save to localStorage
+            localStorage.setItem('userStatus', status);
+            updateStatusUI(status);
+            
+            // Sync to backend if enabled
+            if (CONFIG.USE_BACKEND && CONFIG.API_BASE_URL) {
+                await apiCall('/api/status', {
+                    method: 'POST',
+                    body: JSON.stringify({ status, location })
+                });
+                
+                // Load community stats
+                loadCommunityStatus();
+            }
+        }
+        
+        async function loadCommunityStatus() {
+            const data = await apiCall('/api/status/all?limit=100');
+            if (!data || !data.statuses) return;
+            
+            const stats = { safe: 0, 'need-help': 0, 'can-help': 0 };
+            data.statuses.forEach(s => {
+                if (s.status && stats[s.status] !== undefined) {
+                    stats[s.status]++;
+                }
+            });
+            
+            document.getElementById('statSafe').textContent = stats.safe;
+            document.getElementById('statNeedHelp').textContent = stats['need-help'];
+            document.getElementById('statCanHelp').textContent = stats['can-help'];
+            document.getElementById('communityStatus').style.display = 'block';
+        }
+        
+        function initStatusSelector() {
+            const buttons = document.querySelectorAll('.status-btn');
+            const badge = document.getElementById('statusBadge');
+            
+            // Load saved status
+            const savedStatus = localStorage.getItem('userStatus') || 'none';
+            updateStatusUI(savedStatus);
+            
+            // Load from backend if enabled
+            if (CONFIG.USE_BACKEND && CONFIG.API_BASE_URL) {
+                apiCall('/api/status').then(data => {
+                    if (data && data.status) {
+                        localStorage.setItem('userStatus', data.status);
+                        updateStatusUI(data.status);
+                    }
+                });
+                loadCommunityStatus();
+                setInterval(loadCommunityStatus, 30000); // Update every 30s
+            }
+            
+            buttons.forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const status = btn.dataset.status;
+                    const location = map.getCenter();
+                    await updateStatus(status, {
+                        lat: location.lat,
+                        lng: location.lng
+                    });
+                });
+            });
+            
+            function updateStatusUI(status) {
+                buttons.forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.status === status);
+                });
+                
+                const statusConfig = {
+                    'safe': { text: 'I\'m Safe', class: 'status-safe' },
+                    'need-help': { text: 'Need Help', class: 'status-need-help' },
+                    'can-help': { text: 'Can Help', class: 'status-can-help' },
+                    'none': { text: 'Status: Not Set', class: 'status-none' }
+                };
+                
+                const config = statusConfig[status] || statusConfig.none;
+                badge.textContent = config.text;
+                badge.className = `status-badge ${config.class}`;
+            }
+        }
+        
+        // Checklist Management with Backend
+        function initChecklist() {
+            const checklist = document.getElementById('checklist');
+            
+            // Load from backend if enabled
+            const loadChecklist = async () => {
+                let checkedItems = {};
+                
+                if (CONFIG.USE_BACKEND && CONFIG.API_BASE_URL) {
+                    const data = await apiCall('/api/checklist');
+                    if (data && data.checklistState) {
+                        checkedItems = data.checklistState;
+                    }
+                } else {
+                    const savedState = localStorage.getItem('checklistState');
+                    checkedItems = savedState ? JSON.parse(savedState) : {};
+                }
+                
+                // Render checklist
+                checklist.innerHTML = DEFAULT_CHECKLIST.map((item, index) => {
+                    const isChecked = checkedItems[index] || false;
+                    return `
+                        <li class="checklist-item ${isChecked ? 'completed' : ''}">
+                            <input type="checkbox" id="check-${index}" ${isChecked ? 'checked' : ''}>
+                            <label for="check-${index}">${item}</label>
+                        </li>
+                    `;
+                }).join('');
+                
+                // Add event listeners
+                checklist.querySelectorAll('input[type="checkbox"]').forEach((checkbox, index) => {
+                    checkbox.addEventListener('change', async () => {
+                        const checkedItems = {};
+                        checklist.querySelectorAll('input[type="checkbox"]').forEach((cb, idx) => {
+                            checkedItems[idx] = cb.checked;
+                            if (cb.checked) {
+                                cb.closest('.checklist-item').classList.add('completed');
+                            } else {
+                                cb.closest('.checklist-item').classList.remove('completed');
+                            }
+                        });
+                        
+                        localStorage.setItem('checklistState', JSON.stringify(checkedItems));
+                        
+                        // Sync to backend
+                        if (CONFIG.USE_BACKEND && CONFIG.API_BASE_URL) {
+                            await apiCall('/api/checklist', {
+                                method: 'POST',
+                                body: JSON.stringify({ checklistState: checkedItems })
+                            });
+                        }
+                    });
+                });
+            };
+            
+            loadChecklist();
+        }
+        
+        // Resource Requests Management
+        async function loadRequests() {
+            const board = document.getElementById('requestsBoard');
+            
+            const data = await apiCall('/api/requests?status=open&limit=10');
+            
+            if (!data || !data.requests || data.requests.length === 0) {
+                board.innerHTML = '<div class="no-alerts">No active requests</div>';
+                return;
+            }
+            
+            board.innerHTML = data.requests.map(req => `
+                <div class="request-item ${req.urgent ? 'urgent' : ''}">
+                    <div class="request-type">
+                        ${req.type}
+                        ${req.urgent ? '<span class="request-urgent-badge">URGENT</span>' : ''}
+                    </div>
+                    <div class="request-desc">${req.description}</div>
+                </div>
+            `).join('');
+        }
+        
+        async function createRequest() {
+            const type = document.getElementById('requestType').value.trim();
+            const desc = document.getElementById('requestDesc').value.trim();
+            const urgent = document.getElementById('requestUrgent').checked;
+            
+            if (!type || !desc) {
+                alert('Please fill in both type and description');
+                return;
+            }
+            
+            const result = await apiCall('/api/requests', {
+                method: 'POST',
+                body: JSON.stringify({ type, description: desc, urgent })
+            });
+            
+            if (result && result.success) {
+                document.getElementById('requestType').value = '';
+                document.getElementById('requestDesc').value = '';
+                document.getElementById('requestUrgent').checked = false;
+                loadRequests();
+            }
+        }
+        
+        // Initialize app
+        function init() {
+            initShelters();
+            initAEDs();
+            initStatusSelector();
+            initChecklist();
+            loadAlerts();
+            
+            // Load requests if backend enabled
+            if (CONFIG.USE_BACKEND && CONFIG.API_BASE_URL) {
+                loadRequests();
+                setInterval(loadRequests, 30000); // Refresh every 30s
+            }
+            
+            // Refresh alerts periodically
+            setInterval(loadAlerts, CONFIG.UPDATE_INTERVAL);
+        }
+        
+        // Start app when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+    </script>
+</body>
+</html>
+

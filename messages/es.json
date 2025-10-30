@@ -1,0 +1,50 @@
+{
+  "common": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "close": "Cerrar",
+    "loading": "Cargando...",
+    "error": "Ocurrió un error",
+    "offline": "Estás sin conexión"
+  },
+  "nav": {
+    "home": "Inicio",
+    "alerts": "Alertas",
+    "checkin": "Estado",
+    "requests": "Solicitudes",
+    "tasks": "Tareas",
+    "admin": "Admin",
+    "settings": "Configuración"
+  },
+  "alerts": {
+    "title": "Alertas Activas",
+    "noAlerts": "No hay alertas activas",
+    "severity": {
+      "extreme": "Extremo",
+      "severe": "Severo",
+      "moderate": "Moderado",
+      "minor": "Menor",
+      "unknown": "Desconocido"
+    },
+    "filter": {
+      "active": "Activas",
+      "upcoming": "Próximas",
+      "expired": "Expiradas"
+    }
+  },
+  "checkin": {
+    "title": "Actualizar Tu Estado",
+    "safe": "Estoy Seguro",
+    "needHelp": "Necesito Ayuda",
+    "canHelp": "Puedo Ayudar",
+    "note": "Nota opcional"
+  },
+  "map": {
+    "nearestShelter": "Refugio Más Cercano",
+    "distance": "Distancia",
+    "clickForShelter": "Haz clic en el mapa para encontrar el refugio más cercano"
+  }
+}
+

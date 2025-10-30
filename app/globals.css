@@ -1,0 +1,59 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 40% 4%;
+    --foreground: 210 10% 90%;
+    --card: 210 40% 6%;
+    --card-foreground: 210 10% 85%;
+    --popover: 210 40% 6%;
+    --popover-foreground: 210 10% 85%;
+    --primary: 199 89% 48%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 30% 15%;
+    --secondary-foreground: 210 10% 90%;
+    --muted: 210 30% 12%;
+    --muted-foreground: 210 10% 65%;
+    --accent: 210 30% 15%;
+    --accent-foreground: 210 10% 90%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 210 30% 20%;
+    --input: 210 30% 20%;
+    --ring: 199 89% 48%;
+    --radius: 0.5rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+/* MapLibre GL CSS */
+@import "maplibre-gl/dist/maplibre-gl.css";
+
+/* Accessibility - Ensure sufficient contrast */
+@media (prefers-contrast: high) {
+  :root {
+    --primary: 199 100% 60%;
+    --border: 210 30% 30%;
+  }
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+

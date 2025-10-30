@@ -1,0 +1,50 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "offline": "You are offline"
+  },
+  "nav": {
+    "home": "Home",
+    "alerts": "Alerts",
+    "checkin": "Check In",
+    "requests": "Requests",
+    "tasks": "Tasks",
+    "admin": "Admin",
+    "settings": "Settings"
+  },
+  "alerts": {
+    "title": "Active Alerts",
+    "noAlerts": "No active alerts",
+    "severity": {
+      "extreme": "Extreme",
+      "severe": "Severe",
+      "moderate": "Moderate",
+      "minor": "Minor",
+      "unknown": "Unknown"
+    },
+    "filter": {
+      "active": "Active",
+      "upcoming": "Upcoming",
+      "expired": "Expired"
+    }
+  },
+  "checkin": {
+    "title": "Update Your Status",
+    "safe": "I'm Safe",
+    "needHelp": "Need Help",
+    "canHelp": "Can Help",
+    "note": "Optional note"
+  },
+  "map": {
+    "nearestShelter": "Nearest Shelter",
+    "distance": "Distance",
+    "clickForShelter": "Click on the map to find the nearest shelter"
+  }
+}
+

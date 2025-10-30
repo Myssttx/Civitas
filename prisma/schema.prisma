@@ -1,0 +1,362 @@
+// Prisma Schema for Campus Resilience
+// Uses PostgreSQL with PostGIS extension (via Supabase)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum UserRole {
+  Student
+  RA
+  Captain
+  Admin
+}
+
+enum CheckinStatus {
+  SAFE
+  NEED_HELP
+  CAN_HELP
+}
+
+enum HelpRequestCategory {
+  Medical
+  Supplies
+  Evacuation
+  Information
+  Other
+}
+
+enum Urgency {
+  Low
+  Normal
+  High
+  Critical
+}
+
+enum AlertSeverity {
+  Extreme
+  Severe
+  Moderate
+  Minor
+  Unknown
+}
+
+enum AlertUrgency {
+  Immediate
+  Expected
+  Future
+  Past
+  Unknown
+}
+
+enum AlertCertainty {
+  Observed
+  Likely
+  Possible
+  Unlikely
+  Unknown
+}
+
+enum TaskType {
+  Supply
+  Escort
+  Info
+  FirstAid
+  Other
+}
+
+enum TaskStatus {
+  Open
+  Claimed
+  Done
+  Cancelled
+}
+
+enum HelpRequestStatus {
+  Open
+  Claimed
+  Resolved
+}
+
+enum BulletinPriority {
+  Info
+  Important
+  Critical
+}
+
+enum SafetyResourceType {
+  Shelter
+  AED
+  Stairwell
+  Exit
+  Assembly
+  Clinic
+}
+
+enum DrillTemplate {
+  ShelterInPlace
+  Evacuation
+  PowerOutage
+}
+
+model User {
+  id                  String   @id @default(cuid())
+  authId              String   @unique // Supabase auth user ID
+  email               String   @unique
+  displayName         String?
+  photoUrl            String?
+  roles               UserRole[]
+  language            String   @default("en")
+  accessibilityProfile Json?   // { mobilityAid, medications, pets, etc }
+  lastKnownBuildingId String?
+  lastKnownBuilding   Building? @relation("UserLastBuilding", fields: [lastKnownBuildingId], references: [id])
+  notifyCriticalOnly   Boolean  @default(false)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  checkins            Checkin[]
+  helpRequests        HelpRequest[]
+  tasksCreated        Task[]    @relation("TaskRequester")
+  tasksClaimed        Task[]    @relation("TaskClaimer")
+  bulletins           Bulletin[]
+  roleScopes          RoleScope[]
+  drillsStarted       Drill[]
+  auditLogs           AuditLog[] @relation("AuditActor")
+  pushSubscriptions   PushSubscription[]
+
+  @@index([authId])
+  @@index([email])
+  @@map("users")
+}
+
+model Building {
+  id        String   @id @default(cuid())
+  name      String
+  polygon   Json     // GeoJSON Polygon
+  floors    Int      @default(1)
+  metadata  Json?    // { address, capacity, etc }
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  safetyResources  SafetyResource[]
+  checkins         Checkin[]
+  helpRequests     HelpRequest[]
+  tasks            Task[]
+  bulletins        Bulletin[]
+  roleScopes       RoleScope[]
+  drills           Drill[]
+  usersLastKnown   User[]            @relation("UserLastBuilding")
+
+  @@map("buildings")
+}
+
+model SafetyResource {
+  id        String             @id @default(cuid())
+  buildingId String
+  building  Building          @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  type      SafetyResourceType
+  name      String
+  location  Json               // GeoJSON Point
+  floor     Int?
+  metadata  Json?              // { capacity, equipment, etc }
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  @@index([buildingId])
+  @@index([type])
+  @@map("safety_resources")
+}
+
+model Alert {
+  id          String          @id @default(cuid())
+  sourceId    String          @unique // NWS alert ID
+  event       String
+  headline    String?
+  description String?
+  severity    AlertSeverity
+  urgency     AlertUrgency
+  certainty   AlertCertainty
+  effective   DateTime
+  expires     DateTime?
+  geometry    Json            // GeoJSON Polygon or MultiPolygon
+  areaDesc    String?
+  raw         Json            // Full NWS payload
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([sourceId])
+  @@index([effective])
+  @@index([expires])
+  @@index([severity])
+  @@map("alerts")
+}
+
+model Checkin {
+  id          String        @id @default(cuid())
+  userId      String
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  buildingId  String
+  building    Building      @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  status      CheckinStatus
+  note        String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@unique([userId, buildingId])
+  @@index([buildingId])
+  @@index([status])
+  @@index([userId])
+  @@map("checkins")
+}
+
+model HelpRequest {
+  id               String              @id @default(cuid())
+  userId           String
+  user             User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  buildingId       String
+  building         Building            @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  category         HelpRequestCategory
+  urgency          Urgency
+  details          String
+  preciseLocation  Json?               // GeoJSON Point (only if user explicitly shares)
+  status           HelpRequestStatus   @default(Open)
+  claimerId        String?
+  claimer          User?               @relation(fields: [claimerId], references: [id])
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  @@index([buildingId])
+  @@index([status])
+  @@index([urgency])
+  @@index([userId])
+  @@map("help_requests")
+}
+
+model Task {
+  id          String     @id @default(cuid())
+  buildingId  String
+  building    Building  @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  title       String
+  details     String?
+  type        TaskType
+  status      TaskStatus @default(Open)
+  requesterId String?
+  requester   User?      @relation("TaskRequester", fields: [requesterId], references: [id])
+  claimerId   String?
+  claimer     User?      @relation("TaskClaimer", fields: [claimerId], references: [id])
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([buildingId])
+  @@index([status])
+  @@index([requesterId])
+  @@index([claimerId])
+  @@map("tasks")
+}
+
+model Bulletin {
+  id          String          @id @default(cuid())
+  buildingId  String
+  building    Building        @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  priority    BulletinPriority
+  body        String
+  createdById String
+  createdBy   User            @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([buildingId])
+  @@index([priority])
+  @@index([createdAt])
+  @@map("bulletins")
+}
+
+model RoleScope {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  buildingId String?
+  building  Building? @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  role      UserRole
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, buildingId, role])
+  @@index([userId])
+  @@index([buildingId])
+  @@index([role])
+  @@map("role_scopes")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String
+  actor     User     @relation("AuditActor", fields: [actorId], references: [id])
+  action    String   // CREATE, UPDATE, DELETE, etc
+  entity    String   // User, Building, Alert, etc
+  entityId  String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([actorId])
+  @@index([entity, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+model Drill {
+  id          String        @id @default(cuid())
+  buildingId  String
+  building    Building      @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  template    DrillTemplate
+  startedById String
+  startedBy   User          @relation(fields: [startedById], references: [id], onDelete: Cascade)
+  startedAt   DateTime      @default(now())
+  finishedAt  DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  steps       DrillStep[]
+
+  @@index([buildingId])
+  @@index([startedAt])
+  @@map("drills")
+}
+
+model DrillStep {
+  id          String    @id @default(cuid())
+  drillId     String
+  drill       Drill     @relation(fields: [drillId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  order       Int
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([drillId])
+  @@index([order])
+  @@map("drill_steps")
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, endpoint], name: "userId_endpoint")
+  @@index([userId])
+  @@map("push_subscriptions")
+}
+
