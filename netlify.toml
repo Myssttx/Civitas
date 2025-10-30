@@ -1,14 +1,14 @@
-# Netlify deployment configuration
 [build]
-  # Since this is a single HTML file, no build step needed
-  publish = "."
+  command = "npm run build"
+  publish = ".next"
 
-[[redirects]]
-  # Redirect all routes to index.html for SPA behavior
-  from = "/*"
-  to = "/index.html"
-  status = 200
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
 
 [build.environment]
   NODE_VERSION = "18"
 
+# If you have a package-lock.json, Netlify will use npm ci automatically
+# If using yarn, uncomment:
+# [build]
+#   command = "yarn install && yarn build"

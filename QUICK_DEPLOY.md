@@ -1,10 +1,13 @@
 # ⚡ Quick Deploy - Campus Resilience
 
-## Fastest Way to Deploy (5 minutes)
+## 🆓 100% FREE Deployment (5 minutes)
 
-### Prerequisites
-- GitHub account
-- Supabase account (free tier works)
+All services used here are **completely free**!
+
+### Prerequisites (All Free)
+- GitHub account (free)
+- Supabase account (free tier - 500MB database)
+- Vercel account (free tier - unlimited deployments)
 
 ### Step 1: Push to GitHub
 
