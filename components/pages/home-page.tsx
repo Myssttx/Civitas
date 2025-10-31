@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import * as Tabs from '@radix-ui/react-tabs';
 import { useQuery } from 'react-query';
 import { CampusMap } from '@/components/map/campus-map';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { AlertCircle, MapPin, Shield } from 'lucide-react';
 import { formatDistance } from '@/lib/geospatial';
 import { OfflineBanner } from '@/components/offline-banner';
+import { getGuidanceForAlerts } from '@/lib/guidance';
 import { MainNav } from '@/components/navigation/main-nav';
 
 export function HomePage() {
@@ -59,6 +61,7 @@ export function HomePage() {
   const alerts = alertsData?.alerts || [];
   const buildings = buildingsData?.buildings || [];
   const resources = resourcesData?.resources || [];
+  const safeAreas = safeAreasData?.safeAreas?.map((sa: any) => sa.buildingId) || [];
 
   const highestSeverityAlert = alerts.sort((a: any, b: any) => {
     const severityOrder: Record<string, number> = {
@@ -172,18 +175,42 @@ export function HomePage() {
           </div>
         </aside>
 
-            <div className="flex-1">
+        <div className="flex-1">
+          <Tabs.Root defaultValue="map" className="h-full flex flex-col">
+            <Tabs.List className="border-b px-4 pt-2">
+              <Tabs.Trigger value="map" className="px-3 py-2 text-sm data-[state=active]:border-b-2 data-[state=active]:border-primary">
+                Map
+              </Tabs.Trigger>
+              <Tabs.Trigger value="guidance" className="px-3 py-2 text-sm data-[state=active]:border-b-2 data-[state=active]:border-primary">
+                Guidance
+              </Tabs.Trigger>
+              <Tabs.Trigger value="checklist" className="px-3 py-2 text-sm data-[state=active]:border-b-2 data-[state=active]:border-primary">
+                Checklist
+              </Tabs.Trigger>
+            </Tabs.List>
+
+            <Tabs.Content value="map" className="flex-1">
               <CampusMap
                 alerts={alerts}
                 buildings={buildings}
                 resources={resources}
-                safeAreas={safeAreasData?.safeAreas?.map((sa: any) => sa.buildingId) || []}
+                safeAreas={safeAreas}
                 userLocation={userLocation || undefined}
                 onNearestShelterFound={(shelter, distance) => {
                   setNearestShelter({ name: shelter.name, distance });
                 }}
               />
-            </div>
+            </Tabs.Content>
+
+            <Tabs.Content value="guidance" className="flex-1 overflow-auto p-4">
+              <GuidancePanel alerts={alerts} />
+            </Tabs.Content>
+
+            <Tabs.Content value="checklist" className="flex-1 overflow-auto p-4">
+              <ChecklistPanel />
+            </Tabs.Content>
+          </Tabs.Root>
+        </div>
       </main>
       </div>
     </>
@@ -199,4 +226,141 @@ function getSeverityColor(severity: string): string {
     Unknown: '#78909c',
   };
   return colors[severity] || colors.Unknown;
+}
+
+function GuidancePanel({ alerts }: { alerts: any[] }) {
+  const guidance = getGuidanceForAlerts(alerts);
+
+  if (alerts.length === 0) {
+    return <p className="text-sm text-muted-foreground">No active alerts. Stay prepared and review your checklist.</p>;
+  }
+
+  if (guidance.length === 0) {
+    return <p className="text-sm text-muted-foreground">No specific guidance available for current alerts.</p>;
+  }
+
+  return (
+    <div className="space-y-4">
+      {guidance.map((g, idx) => (
+        <Card key={idx}>
+          <CardHeader>
+            <CardTitle className="text-lg">{g.title}</CardTitle>
+            <CardDescription>Recommended actions</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ul className="list-disc pl-4 text-sm">
+              {g.tips.map((tip, i) => (
+                <li key={i} className="mb-1">{tip}</li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+function ChecklistPanel() {
+  const [saving, setSaving] = useState(false);
+  const [kit, setKit] = useState<any>({});
+
+  useEffect(() => {
+    fetch('/api/kit')
+      .then((r) => r.json())
+      .then((data) => setKit(data.kit || {}))
+      .catch(() => {});
+  }, []);
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      await fetch('/api/kit', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(kit),
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="max-w-2xl space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Medical</CardTitle>
+          <CardDescription>Medications and medical needs</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={!!kit.hasMeds} onChange={(e) => setKit({ ...kit, hasMeds: e.target.checked })} />
+            I require regular medications
+          </label>
+          <textarea
+            placeholder="List medications, dosages, schedules"
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            rows={3}
+            value={kit.medsList || ''}
+            onChange={(e) => setKit({ ...kit, medsList: e.target.value })}
+          />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Devices</CardTitle>
+          <CardDescription>Necessary devices and power needs</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={!!kit.hasDevices} onChange={(e) => setKit({ ...kit, hasDevices: e.target.checked })} />
+            I rely on medical or accessibility devices
+          </label>
+          <textarea
+            placeholder="List devices, charging needs, backup power"
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            rows={3}
+            value={kit.devicesList || ''}
+            onChange={(e) => setKit({ ...kit, devicesList: e.target.value })}
+          />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Contacts</CardTitle>
+          <CardDescription>Emergency contacts and meeting points</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <textarea
+            placeholder="Family, RA, doctor, meeting spots"
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            rows={3}
+            value={kit.contacts || ''}
+            onChange={(e) => setKit({ ...kit, contacts: e.target.value })}
+          />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Notes</CardTitle>
+          <CardDescription>Anything else important</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <textarea
+            placeholder="Allergies, accessibility needs, pet plans, etc."
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            rows={3}
+            value={kit.notes || ''}
+            onChange={(e) => setKit({ ...kit, notes: e.target.value })}
+          />
+        </CardContent>
+      </Card>
+
+      <div className="flex justify-end">
+        <Button onClick={save} disabled={saving}>{saving ? 'Saving...' : 'Save Checklist'}</Button>
+      </div>
+    </div>
+  );
 }
