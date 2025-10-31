@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { AlertCircle, MapPin, Shield } from 'lucide-react';
 import { formatDistance } from '@/lib/geospatial';
 import { OfflineBanner } from '@/components/offline-banner';
+import { MainNav } from '@/components/navigation/main-nav';
 
 export function HomePage() {
   const [nearestShelter, setNearestShelter] = useState<{ name: string; distance: number } | null>(
@@ -65,9 +66,11 @@ export function HomePage() {
   })[0];
 
   return (
-    <div className="flex h-screen flex-col">
-      <OfflineBanner />
-      <header className="border-b bg-card px-4 py-3">
+    <>
+      <MainNav />
+      <div className="flex flex-1 flex-col overflow-hidden">
+        <OfflineBanner />
+        <header className="border-b bg-card px-4 py-3">
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-semibold">🛡️ Campus Resilience</h1>
           {nearestShelter && (
@@ -94,7 +97,7 @@ export function HomePage() {
       )}
 
       <main className="flex flex-1 overflow-hidden">
-        <aside className="hidden w-80 border-r bg-card p-4 md:block">
+        <aside className="hidden w-80 border-r bg-card p-4 md:block overflow-y-auto">
           <div className="space-y-4">
             <Card>
               <CardHeader>
@@ -172,7 +175,8 @@ export function HomePage() {
           />
         </div>
       </main>
-    </div>
+      </div>
+    </>
   );
 }
 

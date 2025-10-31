@@ -4,6 +4,11 @@ const withNextIntl = require('next-intl/plugin')();
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
+  // Uncomment for static export (GitHub Pages, Netlify static)
+  // output: 'export',
+  // images: {
+  //   unoptimized: true,
+  // },
   experimental: {
     serverActions: true,
   },

@@ -39,7 +39,11 @@ export default async function RootLayout({
       </head>
       <body className={GeistSans.className} lang="en">
         <NextIntlClientProvider messages={messages}>
-          <Providers>{children}</Providers>
+          <Providers>
+            <div className="flex h-screen">
+              {children}
+            </div>
+          </Providers>
           <Toaster />
         </NextIntlClientProvider>
         <Script

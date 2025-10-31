@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import { CheckinStatus } from '@prisma/client';
 import { Check, AlertCircle, HeartHandshake } from 'lucide-react';
+import { MainNav } from '@/components/navigation/main-nav';
 
 export function CheckinPage() {
   const [selectedStatus, setSelectedStatus] = useState<CheckinStatus | null>(null);
@@ -75,7 +76,10 @@ export function CheckinPage() {
   };
 
   return (
-    <div className="container mx-auto max-w-2xl p-4">
+    <>
+      <MainNav />
+      <div className="flex-1 overflow-auto">
+        <div className="container mx-auto max-w-2xl p-4">
       <h1 className="mb-6 text-3xl font-bold">Update Your Status</h1>
 
       <Card className="mb-6">
@@ -185,7 +189,8 @@ export function CheckinPage() {
           </CardContent>
         </Card>
       )}
-    </div>
+      </div>
+    </>
   );
 }
 

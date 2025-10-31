@@ -4,6 +4,7 @@ import { useQuery } from 'react-query';
 import { AlertSeverity } from '@prisma/client';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { MainNav } from '@/components/navigation/main-nav';
 
 export function AlertsPage() {
   const { data, isLoading } = useQuery('alerts', async () => {
@@ -15,7 +16,10 @@ export function AlertsPage() {
   const alerts = data?.alerts || [];
 
   return (
-    <div className="container mx-auto p-4">
+    <>
+      <MainNav />
+      <div className="flex-1 overflow-auto">
+        <div className="container mx-auto p-4">
       <h1 className="mb-6 text-3xl font-bold">Active Alerts</h1>
 
       <div className="mb-4 flex gap-2">
@@ -43,7 +47,8 @@ export function AlertsPage() {
           <AlertCard key={alert.id} alert={alert} />
         ))}
       </div>
-    </div>
+      </div>
+    </>
   );
 }
 

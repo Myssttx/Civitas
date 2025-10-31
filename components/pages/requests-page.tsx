@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
+import { MainNav } from '@/components/navigation/main-nav';
 
 export function RequestsPage() {
   const [showForm, setShowForm] = useState(false);
@@ -46,7 +47,10 @@ export function RequestsPage() {
   const requests = requestsData?.helpRequests || [];
 
   return (
-    <div className="container mx-auto max-w-4xl p-4">
+    <>
+      <MainNav />
+      <div className="flex-1 overflow-auto">
+        <div className="container mx-auto max-w-4xl p-4">
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-3xl font-bold">Help Requests</h1>
         <Button onClick={() => setShowForm(!showForm)}>
@@ -73,7 +77,8 @@ export function RequestsPage() {
           requests.map((request: any) => <RequestCard key={request.id} request={request} />)
         )}
       </div>
-    </div>
+      </div>
+    </>
   );
 }
 
