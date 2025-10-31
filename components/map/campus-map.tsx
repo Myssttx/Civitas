@@ -25,12 +25,14 @@ interface Building {
     type: 'Polygon';
     coordinates: number[][][];
   };
+  isSafeArea?: boolean;
 }
 
 interface CampusMapProps {
   alerts?: Alert[];
   buildings?: Building[];
   resources?: SafetyResource[];
+  safeAreas?: string[]; // Array of building IDs that are safe areas
   onNearestShelterFound?: (shelter: SafetyResource, distance: number) => void;
   userLocation?: Point;
 }
@@ -39,6 +41,7 @@ export function CampusMap({
   alerts = [],
   buildings = [],
   resources = [],
+  safeAreas = [],
   onNearestShelterFound,
   userLocation,
 }: CampusMapProps) {
@@ -124,8 +127,18 @@ export function CampusMap({
       type: 'fill',
       source: sourceId,
       paint: {
-        'fill-color': '#4fc3f7',
-        'fill-opacity': 0.2,
+        'fill-color': [
+          'case',
+          ['in', ['get', 'id'], ['literal', safeAreas]],
+          '#4caf50', // Green for safe areas
+          '#4fc3f7', // Blue for regular buildings
+        ],
+        'fill-opacity': [
+          'case',
+          ['in', ['get', 'id'], ['literal', safeAreas]],
+          0.4, // More visible for safe areas
+          0.2,
+        ],
       },
     });
 
@@ -134,8 +147,18 @@ export function CampusMap({
       type: 'line',
       source: sourceId,
       paint: {
-        'line-color': '#4fc3f7',
-        'line-width': 2,
+        'line-color': [
+          'case',
+          ['in', ['get', 'id'], ['literal', safeAreas]],
+          '#4caf50', // Green for safe areas
+          '#4fc3f7', // Blue for regular buildings
+        ],
+        'line-width': [
+          'case',
+          ['in', ['get', 'id'], ['literal', safeAreas]],
+          3, // Thicker for safe areas
+          2,
+        ],
       },
     });
 
@@ -148,7 +171,7 @@ export function CampusMap({
         map.current.removeSource(sourceId);
       }
     };
-  }, [mapLoaded, buildings]);
+  }, [mapLoaded, buildings, safeAreas]);
 
   // Add safety resources markers
   useEffect(() => {

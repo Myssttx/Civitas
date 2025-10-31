@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Home, AlertTriangle, Shield, MessageSquare, ClipboardList, Users } from 'lucide-react';
@@ -13,14 +14,31 @@ const navItems = [
   { href: '/requests', label: 'Requests', icon: MessageSquare },
   { href: '/tasks', label: 'Tasks', icon: ClipboardList },
   { href: '/bulletins', label: 'Bulletins', icon: MessageSquare },
+  { href: '/admin', label: 'Admin', icon: Shield, adminOnly: true },
 ];
 
 export function MainNav() {
   const pathname = usePathname();
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    // Check if user has admin/RA/Captain role
+    fetch('/api/me')
+      .then((res) => res.json())
+      .then((data) => {
+        const roles = data.user?.roles || [];
+        setIsAdmin(
+          roles.includes('Admin') || roles.includes('RA') || roles.includes('Captain')
+        );
+      })
+      .catch(() => setIsAdmin(false));
+  }, []);
+
+  const visibleItems = navItems.filter((item) => !item.adminOnly || isAdmin);
 
   return (
     <nav className="flex flex-col gap-1 border-r bg-card p-4">
-      {navItems.map((item) => {
+      {visibleItems.map((item) => {
         const Icon = item.icon;
         const isActive = pathname === item.href || (item.href !== '/' && pathname?.startsWith(item.href));
         

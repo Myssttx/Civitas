@@ -28,11 +28,17 @@ export function HomePage() {
     return res.json();
   });
 
-  const { data: resourcesData } = useQuery('resources', async () => {
-    const res = await fetch('/api/resources');
-    if (!res.ok) throw new Error('Failed to fetch resources');
-    return res.json();
-  });
+      const { data: resourcesData } = useQuery('resources', async () => {
+        const res = await fetch('/api/resources');
+        if (!res.ok) throw new Error('Failed to fetch resources');
+        return res.json();
+      });
+
+      const { data: safeAreasData } = useQuery('safe-areas', async () => {
+        const res = await fetch('/api/admin/safe-areas');
+        if (!res.ok) return { safeAreas: [] };
+        return res.json();
+      });
 
   useEffect(() => {
     if ('geolocation' in navigator) {
@@ -140,6 +146,9 @@ export function HomePage() {
                   </a>
                 </Button>
                 <Button variant="outline" className="w-full justify-start" asChild>
+                  <a href="/community">View Community</a>
+                </Button>
+                <Button variant="outline" className="w-full justify-start" asChild>
                   <a href="/alerts">View All Alerts</a>
                 </Button>
               </CardContent>
@@ -163,17 +172,18 @@ export function HomePage() {
           </div>
         </aside>
 
-        <div className="flex-1">
-          <CampusMap
-            alerts={alerts}
-            buildings={buildings}
-            resources={resources}
-            userLocation={userLocation || undefined}
-            onNearestShelterFound={(shelter, distance) => {
-              setNearestShelter({ name: shelter.name, distance });
-            }}
-          />
-        </div>
+            <div className="flex-1">
+              <CampusMap
+                alerts={alerts}
+                buildings={buildings}
+                resources={resources}
+                safeAreas={safeAreasData?.safeAreas?.map((sa: any) => sa.buildingId) || []}
+                userLocation={userLocation || undefined}
+                onNearestShelterFound={(shelter, distance) => {
+                  setNearestShelter({ name: shelter.name, distance });
+                }}
+              />
+            </div>
       </main>
       </div>
     </>
